@@ -218,7 +218,7 @@ function Library:new(options)
 		Tab["21"].PaddingLeft = UDim.new(0, 4)
 		Tab["21"].PaddingRight = UDim.new(0, 4)
 
-		-- Tab Activation Methods
+		-- Methods
 		function Tab:Deactivate()
 			Tab.Active = false
 			Tab["1a"].Visible = false
@@ -249,7 +249,7 @@ function Library:new(options)
 			Tab:Activate()
 		end
 
-		-- Element: Button
+		-- Buttons
 		function Tab:Button(options)
 			options = Library:validate({
 				name = "Preview",
@@ -346,7 +346,7 @@ function Library:new(options)
 			return Button
 		end
 
-		-- Element: Label
+		-- Labels
 		function Tab:Label(options)
 			options = Library:validate({
 				name = "Label"
@@ -397,7 +397,7 @@ function Library:new(options)
 			return Label
 		end
 
-		-- Element: Slider
+		-- Sliders
 		function Tab:Slider(options)
 			options = Library:validate({
 				name = "Slider",
@@ -533,7 +533,7 @@ function Library:new(options)
 			return Slider
 		end
 
-		-- Element: Dropdown
+		-- Dropdowns
 		function Tab:Dropdown(options)
 			options = Library:validate({
 				name = "Dropdown",
@@ -700,7 +700,7 @@ function Library:new(options)
 			return Dropdown
 		end
 
-		-- Element: Toggle
+		-- Toggles
 		function Tab:Toggle(options)
 			options = Library:validate({
 				name = "Toggle",
