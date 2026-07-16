@@ -5,8 +5,6 @@ local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 
--- Vars
-local Viewport = workspace.CurrentCamera.ViewportSize
 local Library = {}
 local DefaultTweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
@@ -25,16 +23,164 @@ function Library:tween(object, goal, callback)
 	tween:Play()
 end
 
+-- =====================================================================
+-- NOTIFICATION SYSTEM
+-- =====================================================================
+function Library:CreateNotificationSystem(root)
+	local System = {Count = 0}
+
+	local TypeColors = {
+		info = Color3.fromRGB(107, 170, 218),
+		success = Color3.fromRGB(97, 201, 137),
+		warning = Color3.fromRGB(230, 204, 11),
+		error = Color3.fromRGB(224, 82, 82)
+	}
+
+	System.Holder = Instance.new("Frame", root)
+	System.Holder.Name = "NotificationHolder"
+	System.Holder.BackgroundTransparency = 1
+	System.Holder.BorderSizePixel = 0
+	System.Holder.AnchorPoint = Vector2.new(1, 0)
+	System.Holder.Position = UDim2.new(1, -12, 0, 12)
+	System.Holder.Size = UDim2.new(0, 260, 1, -24)
+
+	local Layout = Instance.new("UIListLayout", System.Holder)
+	Layout.SortOrder = Enum.SortOrder.LayoutOrder
+	Layout.Padding = UDim.new(0, 6)
+
+	function System:Notify(options)
+		options = Library:validate({
+			title = "Notification",
+			message = "",
+			duration = 30,
+			type = "info",
+			image = nil
+		}, options or {})
+
+		local accent = TypeColors[options.type] or TypeColors.info
+		local hasMessage = options.message ~= ""
+		local hasImage = options.image ~= nil
+		local textOffset = hasImage and 40 or 0
+
+		local height = hasMessage and 54 or 40
+		if hasImage then height = math.max(height, 58) end
+
+		local Notif = {}
+
+		Notif["1"] = Instance.new("Frame", System.Holder)
+		Notif["1"].BorderSizePixel = 0
+		Notif["1"].BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+		Notif["1"].Size = UDim2.new(1, 0, 0, height)
+		Notif["1"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+		Notif["1"].ClipsDescendants = true
+		Notif["1"].Name = "Notification"
+		Notif["1"].LayoutOrder = System.Count
+		System.Count += 1
+
+		Notif["2"] = Instance.new("UICorner", Notif["1"])
+		Notif["2"].CornerRadius = UDim.new(0, 4)
+
+		Notif["3"] = Instance.new("UIStroke", Notif["1"])
+		Notif["3"].Thickness = 0.5
+		Notif["3"].Color = accent
+		Notif["3"].ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+		if hasImage then
+			Notif["4"] = Instance.new("ImageLabel", Notif["1"])
+			Notif["4"].BackgroundTransparency = 1
+			Notif["4"].BorderSizePixel = 0
+			Notif["4"].Image = options.image
+			Notif["4"].Size = UDim2.new(0, 32, 0, 32)
+			Notif["4"].Position = UDim2.new(0, 8, 0, 8)
+			Notif["4"].Name = "Icon"
+
+			Notif["5"] = Instance.new("UICorner", Notif["4"])
+			Notif["5"].CornerRadius = UDim.new(0, 4)
+		end
+
+		Notif["6"] = Instance.new("TextLabel", Notif["1"])
+		Notif["6"].BorderSizePixel = 0
+		Notif["6"].TextSize = 14
+		Notif["6"].TextXAlignment = Enum.TextXAlignment.Left
+		Notif["6"].TextYAlignment = Enum.TextYAlignment.Top
+		Notif["6"].BackgroundTransparency = 1
+		Notif["6"].FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal)
+		Notif["6"].TextColor3 = Color3.fromRGB(255, 255, 255)
+		Notif["6"].Size = UDim2.new(1, -(16 + textOffset), 0, 18)
+		Notif["6"].Position = UDim2.new(0, 8 + textOffset, 0, 8)
+		Notif["6"].TextWrapped = true
+		Notif["6"].Text = options.title
+		Notif["6"].Name = "Title"
+
+		if hasMessage then
+			Notif["7"] = Instance.new("TextLabel", Notif["1"])
+			Notif["7"].BorderSizePixel = 0
+			Notif["7"].TextSize = 12
+			Notif["7"].TextXAlignment = Enum.TextXAlignment.Left
+			Notif["7"].TextYAlignment = Enum.TextYAlignment.Top
+			Notif["7"].BackgroundTransparency = 1
+			Notif["7"].FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+			Notif["7"].TextColor3 = Color3.fromRGB(185, 185, 185)
+			Notif["7"].Size = UDim2.new(1, -(16 + textOffset), 0, 16)
+			Notif["7"].Position = UDim2.new(0, 8 + textOffset, 0, 26)
+			Notif["7"].TextWrapped = true
+			Notif["7"].Text = options.message
+			Notif["7"].Name = "Message"
+		end
+
+		Notif["8"] = Instance.new("Frame", Notif["1"])
+		Notif["8"].BorderSizePixel = 0
+		Notif["8"].BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+		Notif["8"].AnchorPoint = Vector2.new(0, 1)
+		Notif["8"].Size = UDim2.new(1, 0, 0, 3)
+		Notif["8"].Position = UDim2.new(0, 0, 1, 0)
+		Notif["8"].Name = "TimerBack"
+
+		Notif["9"] = Instance.new("Frame", Notif["8"])
+		Notif["9"].BorderSizePixel = 0
+		Notif["9"].BackgroundColor3 = accent
+		Notif["9"].Size = UDim2.new(1, 0, 1, 0)
+		Notif["9"].Name = "TimerBar"
+
+		Notif["1"].Position = UDim2.new(1.1, 0, 0, 0)
+		Notif["1"].BackgroundTransparency = 1
+		Notif["3"].Transparency = 1
+		Library:tween(Notif["1"], {Position = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 0})
+		Library:tween(Notif["3"], {Transparency = 0})
+
+		TweenService:Create(Notif["9"], TweenInfo.new(options.duration, Enum.EasingStyle.Linear), {
+			Size = UDim2.new(0, 0, 1, 0)
+		}):Play()
+
+		task.delay(options.duration, function()
+			if Notif["1"] and Notif["1"].Parent then
+				Library:tween(Notif["1"], {BackgroundTransparency = 1, Position = UDim2.new(1.1, 0, 0, 0)}, function()
+					Notif["1"]:Destroy()
+				end)
+				Library:tween(Notif["3"], {Transparency = 1})
+			end
+		end)
+
+		return Notif
+	end
+
+	return System
+end
+
+-- =====================================================================
+-- WINDOW
+-- =====================================================================
 function Library:new(options)
 	options = Library:validate({
-		name = "UI Library Test"
+		name = "UI Library",
+		toggleKey = Enum.KeyCode.K
 	}, options or {})
 
 	local GUI = {
 		CurrentTab = nil
 	}
 
-	-- Main Window Frame
+	-- Root + Main panel
 	do
 		GUI["1"] = Instance.new(
 			"ScreenGui",
@@ -56,6 +202,11 @@ function Library:new(options)
 
 		GUI["3"] = Instance.new("UICorner", GUI["2"])
 		GUI["3"].CornerRadius = UDim.new(0, 6)
+	end
+
+	GUI.Notifications = Library:CreateNotificationSystem(GUI["1"])
+	function GUI:Notify(notifyOptions)
+		return GUI.Notifications:Notify(notifyOptions)
 	end
 
 	-- Topbar
@@ -82,11 +233,7 @@ function Library:new(options)
 		GUI["7"].TextSize = 14
 		GUI["7"].TextXAlignment = Enum.TextXAlignment.Left
 		GUI["7"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		GUI["7"].FontFace = Font.new(
-			"rbxasset://fonts/families/GothamSSm.json",
-			Enum.FontWeight.Regular,
-			Enum.FontStyle.Normal
-		)
+		GUI["7"].FontFace = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
 		GUI["7"].TextColor3 = Color3.fromRGB(255, 255, 255)
 		GUI["7"].BackgroundTransparency = 1
 		GUI["7"].Size = UDim2.new(0.5, 0, 1, 0)
@@ -117,7 +264,7 @@ function Library:new(options)
 		GUI["b"].CornerRadius = UDim.new(0, 6)
 	end
 
-	-- Navigation
+	-- Navigation panel
 	do
 		GUI["c"] = Instance.new("Frame", GUI["2"])
 		GUI["c"].BorderSizePixel = 0
@@ -151,17 +298,86 @@ function Library:new(options)
 		GUI["19"].Name = "Line"
 	end
 
-	-- Tabs Creator
+	-- Draggable (by topbar)
+	do
+		GUI["4"].Active = true
+
+		local dragging = false
+		local dragInput
+		local dragStart
+		local startPos
+
+		local function update(input)
+			local delta = input.Position - dragStart
+			GUI["2"].Position = UDim2.new(
+				startPos.X.Scale, startPos.X.Offset + delta.X,
+				startPos.Y.Scale, startPos.Y.Offset + delta.Y
+			)
+		end
+
+		GUI["4"].InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = true
+				dragStart = input.Position
+				startPos = GUI["2"].Position
+
+				input.Changed:Connect(function()
+					if input.UserInputState == Enum.UserInputState.End then
+						dragging = false
+					end
+				end)
+			end
+		end)
+
+		GUI["4"].InputChanged:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseMovement
+				or input.UserInputType == Enum.UserInputType.Touch then
+				dragInput = input
+			end
+		end)
+
+		UserInputService.InputChanged:Connect(function(input)
+			if input == dragInput and dragging then
+				update(input)
+			end
+		end)
+	end
+
+	-- Show/hide: keybind + topbar X button
+	do
+		function GUI:ToggleUI()
+			GUI["2"].Visible = not GUI["2"].Visible
+			if not GUI["2"].Visible then
+				GUI:Notify({
+					title = "UI Hidden",
+					message = "Press " .. options.toggleKey.Name .. " to show it again.",
+					type = "warning",
+					duration = 5
+				})
+			end
+		end
+
+		GUI["9"].MouseButton1Click:Connect(function()
+			GUI:ToggleUI()
+		end)
+
+		UserInputService.InputBegan:Connect(function(input, gpe)
+			if gpe then return end
+			if input.KeyCode == options.toggleKey then
+				GUI:ToggleUI()
+			end
+		end)
+	end
+
+	-- Tabs
 	function GUI:CreateTab(options)
 		options = Library:validate({
 			name = "Preview",
 			icon = "rbxassetid://103051585601742"
 		}, options or {})
 
-		local Tab = {
-			Hover = false,
-			Active = false
-		}
+		local Tab = {Hover = false, Active = false}
 
 		Tab["16"] = Instance.new("TextButton", GUI["10"])
 		Tab["16"].BorderSizePixel = 0
@@ -218,7 +434,6 @@ function Library:new(options)
 		Tab["21"].PaddingLeft = UDim.new(0, 4)
 		Tab["21"].PaddingRight = UDim.new(0, 4)
 
-		-- Methods
 		function Tab:Deactivate()
 			Tab.Active = false
 			Tab["1a"].Visible = false
@@ -229,9 +444,7 @@ function Library:new(options)
 		end
 
 		function Tab:Activate()
-			if GUI.CurrentTab then
-				GUI.CurrentTab:Deactivate()
-			end
+			if GUI.CurrentTab then GUI.CurrentTab:Deactivate() end
 			Tab.Active = true
 			Tab["1a"].Visible = true
 			Tab["1b"].Visible = true
@@ -241,249 +454,212 @@ function Library:new(options)
 			GUI.CurrentTab = Tab
 		end
 
-		Tab["16"].MouseButton1Click:Connect(function()
-			Tab:Activate()
-		end)
+		Tab["16"].MouseButton1Click:Connect(function() Tab:Activate() end)
+		if not GUI.CurrentTab then Tab:Activate() end
 
-		if not GUI.CurrentTab then
-			Tab:Activate()
-		end
-
-		-- Buttons
 		function Tab:Button(options)
 			options = Library:validate({
 				name = "Preview",
-				callback = function() end
+				callback = function() end,
+				notify = nil
 			}, options or {})
 
-			local Button = {
-				Hover = false,
-				MouseDown = false
-			}
+			local Button = {Hover = false, MouseDown = false}
 
-			do
-				Button["1c"] = Instance.new("Frame", Tab["1b"])
-				Button["1c"].BorderSizePixel = 0
-				Button["1c"].BackgroundColor3 = Color3.fromRGB(32, 32, 32)
-				Button["1c"].Size = UDim2.new(1, 0, 0, 32)
-				Button["1c"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Button["1c"].Name = "Button"
+			Button["1c"] = Instance.new("Frame", Tab["1b"])
+			Button["1c"].BorderSizePixel = 0
+			Button["1c"].BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+			Button["1c"].Size = UDim2.new(1, 0, 0, 32)
+			Button["1c"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Button["1c"].Name = "Button"
 
-				Button["1d"] = Instance.new("UICorner", Button["1c"])
-				Button["1d"].CornerRadius = UDim.new(0, 4)
+			Button["1d"] = Instance.new("UICorner", Button["1c"])
+			Button["1d"].CornerRadius = UDim.new(0, 4)
 
-				Button["1e"] = Instance.new("UIStroke", Button["1c"])
-				Button["1e"].Thickness = 0.5
-				Button["1e"].Color = Color3.fromRGB(71, 71, 71)
-				Button["1e"].ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+			Button["1e"] = Instance.new("UIStroke", Button["1c"])
+			Button["1e"].Thickness = 0.5
+			Button["1e"].Color = Color3.fromRGB(71, 71, 71)
+			Button["1e"].ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-				Button["1f"] = Instance.new("TextLabel", Button["1c"])
-				Button["1f"].BorderSizePixel = 0
-				Button["1f"].TextSize = 14
-				Button["1f"].TextXAlignment = Enum.TextXAlignment.Left
-				Button["1f"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-				Button["1f"].FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
-				Button["1f"].TextColor3 = Color3.fromRGB(255, 255, 255)
-				Button["1f"].BackgroundTransparency = 1
-				Button["1f"].Size = UDim2.new(1, -20, 1, 0)
-				Button["1f"].Position = UDim2.new(0, 10, 0, 0)
-				Button["1f"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Button["1f"].Text = options.name
-				Button["1f"].Name = "Title"
-			end
+			Button["1f"] = Instance.new("TextLabel", Button["1c"])
+			Button["1f"].BorderSizePixel = 0
+			Button["1f"].TextSize = 14
+			Button["1f"].TextXAlignment = Enum.TextXAlignment.Left
+			Button["1f"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			Button["1f"].FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+			Button["1f"].TextColor3 = Color3.fromRGB(255, 255, 255)
+			Button["1f"].BackgroundTransparency = 1
+			Button["1f"].Size = UDim2.new(1, -20, 1, 0)
+			Button["1f"].Position = UDim2.new(0, 10, 0, 0)
+			Button["1f"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Button["1f"].Text = options.name
+			Button["1f"].Name = "Title"
 
-			function Button:SetText(text)
-				Button["1f"].Text = text
-			end
-
-			function Button:SetCallBack(fn)
-				options.callback = fn
-			end
+			function Button:SetText(text) Button["1f"].Text = text end
+			function Button:SetCallBack(fn) options.callback = fn end
 			Button.SetCallback = Button.SetCallBack
 
-			do
-				Button["1c"].MouseEnter:Connect(function()
-					Button.Hover = true
-					Library:tween(Button["1e"], {Color = Color3.fromRGB(120, 120, 120)})
-				end)
+			Button["1c"].MouseEnter:Connect(function()
+				Button.Hover = true
+				Library:tween(Button["1e"], {Color = Color3.fromRGB(120, 120, 120)})
+			end)
 
-				Button["1c"].MouseLeave:Connect(function()
-					Button.Hover = false
-					if not Button.MouseDown then
+			Button["1c"].MouseLeave:Connect(function()
+				Button.Hover = false
+				if not Button.MouseDown then
+					Library:tween(Button["1c"], {BackgroundColor3 = Color3.fromRGB(32, 32, 32)})
+					Library:tween(Button["1e"], {Color = Color3.fromRGB(71, 71, 71)})
+				end
+			end)
+
+			UserInputService.InputBegan:Connect(function(input, gpe)
+				if gpe then return end
+				if input.UserInputType == Enum.UserInputType.MouseButton1 and Button.Hover then
+					Button.MouseDown = true
+					Library:tween(Button["1c"], {BackgroundColor3 = Color3.fromRGB(20, 20, 20)})
+				end
+			end)
+
+			UserInputService.InputEnded:Connect(function(input, gpe)
+				if gpe then return end
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					if Button.MouseDown and Button.Hover then
+						options.callback()
+						if options.notify then GUI:Notify(options.notify) end
+					end
+					Button.MouseDown = false
+					if Button.Hover then
+						Library:tween(Button["1c"], {BackgroundColor3 = Color3.fromRGB(38, 38, 38)})
+						Library:tween(Button["1e"], {Color = Color3.fromRGB(120, 120, 120)})
+					else
 						Library:tween(Button["1c"], {BackgroundColor3 = Color3.fromRGB(32, 32, 32)})
 						Library:tween(Button["1e"], {Color = Color3.fromRGB(71, 71, 71)})
 					end
-				end)
-
-				UserInputService.InputBegan:Connect(function(input, gpe)
-					if gpe then return end
-					if input.UserInputType == Enum.UserInputType.MouseButton1 and Button.Hover then
-						Button.MouseDown = true
-						Library:tween(Button["1c"], {BackgroundColor3 = Color3.fromRGB(20, 20, 20)})
-					end
-				end)
-
-				UserInputService.InputEnded:Connect(function(input, gpe)
-					if gpe then return end
-					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						if Button.MouseDown and Button.Hover then
-							options.callback()
-						end
-
-						Button.MouseDown = false
-
-						if Button.Hover then
-							Library:tween(Button["1c"], {BackgroundColor3 = Color3.fromRGB(38, 38, 38)})
-							Library:tween(Button["1e"], {Color = Color3.fromRGB(120, 120, 120)})
-						else
-							Library:tween(Button["1c"], {BackgroundColor3 = Color3.fromRGB(32, 32, 32)})
-							Library:tween(Button["1e"], {Color = Color3.fromRGB(71, 71, 71)})
-						end
-					end
-				end)
-			end
+				end
+			end)
 
 			return Button
 		end
 
-		-- Labels
 		function Tab:Label(options)
-			options = Library:validate({
-				name = "Label"
-			}, options or {})
-
+			options = Library:validate({name = "Label"}, options or {})
 			local Label = {}
 
-			do
-				Label["1"] = Instance.new("Frame", Tab["1b"])
-				Label["1"].BorderSizePixel = 0
-				Label["1"].BackgroundColor3 = Color3.fromRGB(71, 60, 4)
-				Label["1"].Size = UDim2.new(1, 0, 0, 26)
-				Label["1"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Label["1"].Name = "Label"
+			Label["1"] = Instance.new("Frame", Tab["1b"])
+			Label["1"].BorderSizePixel = 0
+			Label["1"].BackgroundColor3 = Color3.fromRGB(71, 60, 4)
+			Label["1"].Size = UDim2.new(1, 0, 0, 26)
+			Label["1"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Label["1"].Name = "Label"
 
-				Label["2"] = Instance.new("UICorner", Label["1"])
-				Label["2"].CornerRadius = UDim.new(0, 4)
+			Label["2"] = Instance.new("UICorner", Label["1"])
+			Label["2"].CornerRadius = UDim.new(0, 4)
 
-				Label["3"] = Instance.new("UIStroke", Label["1"])
-				Label["3"].Thickness = 0.5
-				Label["3"].Color = Color3.fromRGB(230, 204, 11)
-				Label["3"].ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+			Label["3"] = Instance.new("UIStroke", Label["1"])
+			Label["3"].Thickness = 0.5
+			Label["3"].Color = Color3.fromRGB(230, 204, 11)
+			Label["3"].ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-				Label["4"] = Instance.new("TextLabel", Label["1"])
-				Label["4"].BorderSizePixel = 0
-				Label["4"].TextSize = 14
-				Label["4"].TextXAlignment = Enum.TextXAlignment.Left
-				Label["4"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-				Label["4"].FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
-				Label["4"].TextColor3 = Color3.fromRGB(255, 255, 255)
-				Label["4"].BackgroundTransparency = 1
-				Label["4"].Size = UDim2.new(1, -20, 1, 0)
-				Label["4"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Label["4"].Text = options.name
-				Label["4"].Name = "Title"
+			Label["4"] = Instance.new("TextLabel", Label["1"])
+			Label["4"].BorderSizePixel = 0
+			Label["4"].TextSize = 14
+			Label["4"].TextXAlignment = Enum.TextXAlignment.Left
+			Label["4"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			Label["4"].FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+			Label["4"].TextColor3 = Color3.fromRGB(255, 255, 255)
+			Label["4"].BackgroundTransparency = 1
+			Label["4"].Size = UDim2.new(1, -20, 1, 0)
+			Label["4"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Label["4"].Text = options.name
+			Label["4"].Name = "Title"
 
-				Label["5"] = Instance.new("UIPadding", Label["1"])
-				Label["5"].PaddingTop = UDim.new(0, 6)
-				Label["5"].PaddingRight = UDim.new(0, 6)
-				Label["5"].PaddingLeft = UDim.new(0, 6)
-				Label["5"].PaddingBottom = UDim.new(0, 6)
-			end
+			Label["5"] = Instance.new("UIPadding", Label["1"])
+			Label["5"].PaddingTop = UDim.new(0, 6)
+			Label["5"].PaddingRight = UDim.new(0, 6)
+			Label["5"].PaddingLeft = UDim.new(0, 6)
+			Label["5"].PaddingBottom = UDim.new(0, 6)
 
-			function Label:SetText(text)
-				Label["4"].Text = text
-			end
-
+			function Label:SetText(text) Label["4"].Text = text end
 			return Label
 		end
 
-		-- Sliders
 		function Tab:Slider(options)
 			options = Library:validate({
-				name = "Slider",
-				min = 0,
-				max = 100,
-				default = 50,
+				name = "Slider", min = 0, max = 100, default = 50,
 				callback = function(value) end
 			}, options or {})
 
-			local Slider = {
-				Value = math.clamp(options.default, options.min, options.max),
-				Dragging = false
-			}
+			local Slider = {Value = math.clamp(options.default, options.min, options.max), Dragging = false}
 
-			do
-				Slider["1"] = Instance.new("Frame", Tab["1b"])
-				Slider["1"].BorderSizePixel = 0
-				Slider["1"].BackgroundColor3 = Color3.fromRGB(32, 32, 32)
-				Slider["1"].Size = UDim2.new(1, 0, 0, 38)
-				Slider["1"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Slider["1"].Name = "Slider"
+			Slider["1"] = Instance.new("Frame", Tab["1b"])
+			Slider["1"].BorderSizePixel = 0
+			Slider["1"].BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+			Slider["1"].Size = UDim2.new(1, 0, 0, 38)
+			Slider["1"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Slider["1"].Name = "Slider"
 
-				Slider["2"] = Instance.new("UICorner", Slider["1"])
-				Slider["2"].CornerRadius = UDim.new(0, 4)
+			Slider["2"] = Instance.new("UICorner", Slider["1"])
+			Slider["2"].CornerRadius = UDim.new(0, 4)
 
-				Slider["3"] = Instance.new("UIStroke", Slider["1"])
-				Slider["3"].Thickness = 0.5
-				Slider["3"].Color = Color3.fromRGB(71, 71, 71)
-				Slider["3"].ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+			Slider["3"] = Instance.new("UIStroke", Slider["1"])
+			Slider["3"].Thickness = 0.5
+			Slider["3"].Color = Color3.fromRGB(71, 71, 71)
+			Slider["3"].ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-				Slider["4"] = Instance.new("TextLabel", Slider["1"])
-				Slider["4"].BorderSizePixel = 0
-				Slider["4"].TextSize = 14
-				Slider["4"].TextXAlignment = Enum.TextXAlignment.Left
-				Slider["4"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-				Slider["4"].FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
-				Slider["4"].TextColor3 = Color3.fromRGB(255, 255, 255)
-				Slider["4"].BackgroundTransparency = 1
-				Slider["4"].Size = UDim2.new(1, -24, 1, -10)
-				Slider["4"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Slider["4"].Text = options.name
-				Slider["4"].Name = "Title"
+			Slider["4"] = Instance.new("TextLabel", Slider["1"])
+			Slider["4"].BorderSizePixel = 0
+			Slider["4"].TextSize = 14
+			Slider["4"].TextXAlignment = Enum.TextXAlignment.Left
+			Slider["4"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			Slider["4"].FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+			Slider["4"].TextColor3 = Color3.fromRGB(255, 255, 255)
+			Slider["4"].BackgroundTransparency = 1
+			Slider["4"].Size = UDim2.new(1, -24, 1, -10)
+			Slider["4"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Slider["4"].Text = options.name
+			Slider["4"].Name = "Title"
 
-				Slider["5"] = Instance.new("UIPadding", Slider["1"])
-				Slider["5"].PaddingTop = UDim.new(0, 6)
-				Slider["5"].PaddingRight = UDim.new(0, 6)
-				Slider["5"].PaddingLeft = UDim.new(0, 6)
-				Slider["5"].PaddingBottom = UDim.new(0, 6)
+			Slider["5"] = Instance.new("UIPadding", Slider["1"])
+			Slider["5"].PaddingTop = UDim.new(0, 6)
+			Slider["5"].PaddingRight = UDim.new(0, 6)
+			Slider["5"].PaddingLeft = UDim.new(0, 6)
+			Slider["5"].PaddingBottom = UDim.new(0, 6)
 
-				Slider["6"] = Instance.new("TextLabel", Slider["1"])
-				Slider["6"].BorderSizePixel = 0
-				Slider["6"].TextSize = 14
-				Slider["6"].TextXAlignment = Enum.TextXAlignment.Right
-				Slider["6"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-				Slider["6"].FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
-				Slider["6"].TextColor3 = Color3.fromRGB(255, 255, 255)
-				Slider["6"].BackgroundTransparency = 1
-				Slider["6"].AnchorPoint = Vector2.new(1, 0)
-				Slider["6"].Size = UDim2.new(0, 32, 1, -10)
-				Slider["6"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Slider["6"].Text = tostring(Slider.Value)
-				Slider["6"].Name = "Value"
-				Slider["6"].Position = UDim2.new(1, 0, 0, 0)
+			Slider["6"] = Instance.new("TextLabel", Slider["1"])
+			Slider["6"].BorderSizePixel = 0
+			Slider["6"].TextSize = 14
+			Slider["6"].TextXAlignment = Enum.TextXAlignment.Right
+			Slider["6"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			Slider["6"].FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+			Slider["6"].TextColor3 = Color3.fromRGB(255, 255, 255)
+			Slider["6"].BackgroundTransparency = 1
+			Slider["6"].AnchorPoint = Vector2.new(1, 0)
+			Slider["6"].Size = UDim2.new(0, 32, 1, -10)
+			Slider["6"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Slider["6"].Text = tostring(Slider.Value)
+			Slider["6"].Name = "Value"
+			Slider["6"].Position = UDim2.new(1, 0, 0, 0)
 
-				Slider["7"] = Instance.new("Frame", Slider["1"])
-				Slider["7"].BorderSizePixel = 0
-				Slider["7"].BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-				Slider["7"].AnchorPoint = Vector2.new(0, 1)
-				Slider["7"].Size = UDim2.new(1, 0, 0, 4)
-				Slider["7"].Position = UDim2.new(0, 0, 1, 0)
-				Slider["7"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Slider["7"].Name = "SliderBack"
+			Slider["7"] = Instance.new("Frame", Slider["1"])
+			Slider["7"].BorderSizePixel = 0
+			Slider["7"].BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+			Slider["7"].AnchorPoint = Vector2.new(0, 1)
+			Slider["7"].Size = UDim2.new(1, 0, 0, 4)
+			Slider["7"].Position = UDim2.new(0, 0, 1, 0)
+			Slider["7"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Slider["7"].Name = "SliderBack"
 
-				Slider["8"] = Instance.new("UICorner", Slider["7"])
+			Slider["8"] = Instance.new("UICorner", Slider["7"])
+			Slider["9"] = Instance.new("UIStroke", Slider["7"])
+			Slider["9"].Color = Color3.fromRGB(64, 64, 64)
 
-				Slider["9"] = Instance.new("UIStroke", Slider["7"])
-				Slider["9"].Color = Color3.fromRGB(64, 64, 64)
-
-				local startFraction = (Slider.Value - options.min) / (options.max - options.min)
-				Slider["a"] = Instance.new("Frame", Slider["7"])
-				Slider["a"].BorderSizePixel = 0
-				Slider["a"].BackgroundColor3 = Color3.fromRGB(107, 170, 218)
-				Slider["a"].Size = UDim2.new(startFraction, 0, 1, 0)
-				Slider["a"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Slider["a"].Name = "Draggable"
-			end
+			local startFraction = (Slider.Value - options.min) / (options.max - options.min)
+			Slider["a"] = Instance.new("Frame", Slider["7"])
+			Slider["a"].BorderSizePixel = 0
+			Slider["a"].BackgroundColor3 = Color3.fromRGB(107, 170, 218)
+			Slider["a"].Size = UDim2.new(startFraction, 0, 1, 0)
+			Slider["a"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Slider["a"].Name = "Draggable"
 
 			function Slider:Set(value)
 				value = math.clamp(math.floor(value + 0.5), options.min, options.max)
@@ -493,170 +669,152 @@ function Library:new(options)
 				Slider["6"].Text = tostring(value)
 				options.callback(value)
 			end
+			function Slider:SetCallback(fn) options.callback = fn end
 
-			function Slider:SetCallback(fn)
-				options.callback = fn
+			local function updateFromX(x)
+				local absPos = Slider["7"].AbsolutePosition.X
+				local absSize = Slider["7"].AbsoluteSize.X
+				local fraction = math.clamp((x - absPos) / absSize, 0, 1)
+				Slider:Set(options.min + fraction * (options.max - options.min))
 			end
 
-			do
-				local function updateFromX(x)
-					local absPos = Slider["7"].AbsolutePosition.X
-					local absSize = Slider["7"].AbsoluteSize.X
-					local fraction = math.clamp((x - absPos) / absSize, 0, 1)
-					Slider:Set(options.min + fraction * (options.max - options.min))
+			Slider["7"].InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1
+					or input.UserInputType == Enum.UserInputType.Touch then
+					Slider.Dragging = true
+					updateFromX(input.Position.X)
 				end
+			end)
 
-				Slider["7"].InputBegan:Connect(function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1
-						or input.UserInputType == Enum.UserInputType.Touch then
-						Slider.Dragging = true
-						updateFromX(input.Position.X)
-					end
-				end)
+			UserInputService.InputChanged:Connect(function(input)
+				if Slider.Dragging
+					and (input.UserInputType == Enum.UserInputType.MouseMovement
+						or input.UserInputType == Enum.UserInputType.Touch) then
+					updateFromX(input.Position.X)
+				end
+			end)
 
-				UserInputService.InputChanged:Connect(function(input)
-					if Slider.Dragging
-						and (input.UserInputType == Enum.UserInputType.MouseMovement
-							or input.UserInputType == Enum.UserInputType.Touch) then
-						updateFromX(input.Position.X)
-					end
-				end)
-
-				UserInputService.InputEnded:Connect(function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1
-						or input.UserInputType == Enum.UserInputType.Touch then
-						Slider.Dragging = false
-					end
-				end)
-			end
+			UserInputService.InputEnded:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1
+					or input.UserInputType == Enum.UserInputType.Touch then
+					Slider.Dragging = false
+				end
+			end)
 
 			return Slider
 		end
 
-		-- Dropdowns
 		function Tab:Dropdown(options)
 			options = Library:validate({
-				name = "Dropdown",
-				options = {},
-				default = nil,
+				name = "Dropdown", options = {}, default = nil,
 				callback = function(value) end
 			}, options or {})
 
-			local Dropdown = {
-				Open = false,
-				Selected = options.default,
-				OptionButtons = {}
-			}
-
+			local Dropdown = {Open = false, Selected = options.default, OptionButtons = {}}
 			local collapsedHeight = 30
 			local rowHeight = 22
 
-			do
-				Dropdown["1"] = Instance.new("TextButton", Tab["1b"])
-				Dropdown["1"].BorderSizePixel = 0
-				Dropdown["1"].BackgroundColor3 = Color3.fromRGB(32, 32, 32)
-				Dropdown["1"].ClipsDescendants = true
-				Dropdown["1"].Size = UDim2.new(1, 0, 0, collapsedHeight)
-				Dropdown["1"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Dropdown["1"].Name = "Dropdown"
-				Dropdown["1"].Text = ""
-				Dropdown["1"].AutoButtonColor = false
+			Dropdown["1"] = Instance.new("TextButton", Tab["1b"])
+			Dropdown["1"].BorderSizePixel = 0
+			Dropdown["1"].BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+			Dropdown["1"].ClipsDescendants = true
+			Dropdown["1"].Size = UDim2.new(1, 0, 0, collapsedHeight)
+			Dropdown["1"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Dropdown["1"].Name = "Dropdown"
+			Dropdown["1"].Text = ""
+			Dropdown["1"].AutoButtonColor = false
 
-				Dropdown["2"] = Instance.new("UICorner", Dropdown["1"])
-				Dropdown["2"].CornerRadius = UDim.new(0, 4)
+			Dropdown["2"] = Instance.new("UICorner", Dropdown["1"])
+			Dropdown["2"].CornerRadius = UDim.new(0, 4)
 
-				Dropdown["3"] = Instance.new("UIStroke", Dropdown["1"])
-				Dropdown["3"].Thickness = 0.5
-				Dropdown["3"].Color = Color3.fromRGB(71, 71, 71)
-				Dropdown["3"].ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+			Dropdown["3"] = Instance.new("UIStroke", Dropdown["1"])
+			Dropdown["3"].Thickness = 0.5
+			Dropdown["3"].Color = Color3.fromRGB(71, 71, 71)
+			Dropdown["3"].ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-				Dropdown["4"] = Instance.new("TextLabel", Dropdown["1"])
-				Dropdown["4"].BorderSizePixel = 0
-				Dropdown["4"].TextSize = 14
-				Dropdown["4"].TextXAlignment = Enum.TextXAlignment.Left
-				Dropdown["4"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-				Dropdown["4"].FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
-				Dropdown["4"].TextColor3 = Color3.fromRGB(255, 255, 255)
-				Dropdown["4"].BackgroundTransparency = 1
-				Dropdown["4"].Size = UDim2.new(1, -20, 0, 20)
-				Dropdown["4"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Dropdown["4"].Text = options.default and (options.name .. ": " .. tostring(options.default)) or options.name
-				Dropdown["4"].Name = "Title"
+			Dropdown["4"] = Instance.new("TextLabel", Dropdown["1"])
+			Dropdown["4"].BorderSizePixel = 0
+			Dropdown["4"].TextSize = 14
+			Dropdown["4"].TextXAlignment = Enum.TextXAlignment.Left
+			Dropdown["4"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			Dropdown["4"].FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+			Dropdown["4"].TextColor3 = Color3.fromRGB(255, 255, 255)
+			Dropdown["4"].BackgroundTransparency = 1
+			Dropdown["4"].Size = UDim2.new(1, -20, 0, 20)
+			Dropdown["4"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Dropdown["4"].Text = options.default and (options.name .. ": " .. tostring(options.default)) or options.name
+			Dropdown["4"].Name = "Title"
 
-				Dropdown["5"] = Instance.new("UIPadding", Dropdown["1"])
-				Dropdown["5"].PaddingTop = UDim.new(0, 6)
-				Dropdown["5"].PaddingRight = UDim.new(0, 6)
-				Dropdown["5"].PaddingLeft = UDim.new(0, 6)
-				Dropdown["5"].PaddingBottom = UDim.new(0, 6)
+			Dropdown["5"] = Instance.new("UIPadding", Dropdown["1"])
+			Dropdown["5"].PaddingTop = UDim.new(0, 6)
+			Dropdown["5"].PaddingRight = UDim.new(0, 6)
+			Dropdown["5"].PaddingLeft = UDim.new(0, 6)
+			Dropdown["5"].PaddingBottom = UDim.new(0, 6)
 
-				Dropdown["6"] = Instance.new("ImageLabel", Dropdown["1"])
-				Dropdown["6"].BorderSizePixel = 0
-				Dropdown["6"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-				Dropdown["6"].AnchorPoint = Vector2.new(1, 0)
-				Dropdown["6"].Image = "rbxassetid://76880195348310"
-				Dropdown["6"].Size = UDim2.new(0, 20, 0, 20)
-				Dropdown["6"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Dropdown["6"].BackgroundTransparency = 1
-				Dropdown["6"].Name = "Icon"
-				Dropdown["6"].Position = UDim2.new(1, 0, 0, 0)
+			Dropdown["6"] = Instance.new("ImageLabel", Dropdown["1"])
+			Dropdown["6"].BorderSizePixel = 0
+			Dropdown["6"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			Dropdown["6"].AnchorPoint = Vector2.new(1, 0)
+			Dropdown["6"].Image = "rbxassetid://76880195348310"
+			Dropdown["6"].Size = UDim2.new(0, 20, 0, 20)
+			Dropdown["6"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Dropdown["6"].BackgroundTransparency = 1
+			Dropdown["6"].Name = "Icon"
+			Dropdown["6"].Position = UDim2.new(1, 0, 0, 0)
 
-				Dropdown["7"] = Instance.new("Frame", Dropdown["1"])
-				Dropdown["7"].BorderSizePixel = 0
-				Dropdown["7"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-				Dropdown["7"].Size = UDim2.new(1, 0, 1, -24)
-				Dropdown["7"].Position = UDim2.new(0, 0, 0, 26)
-				Dropdown["7"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Dropdown["7"].Name = "OptionHolder"
-				Dropdown["7"].BackgroundTransparency = 1
+			Dropdown["7"] = Instance.new("Frame", Dropdown["1"])
+			Dropdown["7"].BorderSizePixel = 0
+			Dropdown["7"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			Dropdown["7"].Size = UDim2.new(1, 0, 1, -24)
+			Dropdown["7"].Position = UDim2.new(0, 0, 0, 26)
+			Dropdown["7"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Dropdown["7"].Name = "OptionHolder"
+			Dropdown["7"].BackgroundTransparency = 1
 
-				Dropdown["8"] = Instance.new("UIListLayout", Dropdown["7"])
-				Dropdown["8"].Padding = UDim.new(0, 4)
-				Dropdown["8"].SortOrder = Enum.SortOrder.LayoutOrder
+			Dropdown["8"] = Instance.new("UIListLayout", Dropdown["7"])
+			Dropdown["8"].Padding = UDim.new(0, 4)
+			Dropdown["8"].SortOrder = Enum.SortOrder.LayoutOrder
 
-				for _, optionName in ipairs(options.options) do
-					local isSelected = (optionName == Dropdown.Selected)
+			for _, optionName in ipairs(options.options) do
+				local isSelected = (optionName == Dropdown.Selected)
 
-					local optionButton = Instance.new("TextButton", Dropdown["7"])
-					optionButton.BorderSizePixel = 0
-					optionButton.TextSize = 14
-					optionButton.BackgroundColor3 = isSelected and Color3.fromRGB(86, 86, 86) or Color3.fromRGB(51, 51, 51)
-					optionButton.FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
-					optionButton.TextColor3 = isSelected and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(207, 207, 207)
-					optionButton.Size = UDim2.new(1, 0, 0, 18)
-					optionButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
-					optionButton.Text = optionName
-					optionButton.Name = "Option"
-					optionButton.AutoButtonColor = false
+				local optionButton = Instance.new("TextButton", Dropdown["7"])
+				optionButton.BorderSizePixel = 0
+				optionButton.TextSize = 14
+				optionButton.BackgroundColor3 = isSelected and Color3.fromRGB(86, 86, 86) or Color3.fromRGB(51, 51, 51)
+				optionButton.FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+				optionButton.TextColor3 = isSelected and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(207, 207, 207)
+				optionButton.Size = UDim2.new(1, 0, 0, 18)
+				optionButton.BorderColor3 = Color3.fromRGB(0, 0, 0)
+				optionButton.Text = optionName
+				optionButton.Name = "Option"
+				optionButton.AutoButtonColor = false
 
-					local optionCorner = Instance.new("UICorner", optionButton)
-					optionCorner.CornerRadius = UDim.new(0, 2)
+				local optionCorner = Instance.new("UICorner", optionButton)
+				optionCorner.CornerRadius = UDim.new(0, 2)
 
-					local optionStroke = Instance.new("UIStroke", optionButton)
-					optionStroke.Color = isSelected and Color3.fromRGB(163, 163, 163) or Color3.fromRGB(71, 71, 71)
-					optionStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+				local optionStroke = Instance.new("UIStroke", optionButton)
+				optionStroke.Color = isSelected and Color3.fromRGB(163, 163, 163) or Color3.fromRGB(71, 71, 71)
+				optionStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-					Dropdown.OptionButtons[optionName] = {
-						Button = optionButton,
-						Stroke = optionStroke
-					}
+				Dropdown.OptionButtons[optionName] = {Button = optionButton, Stroke = optionStroke}
 
-					optionButton.MouseEnter:Connect(function()
-						if optionName ~= Dropdown.Selected then
-							Library:tween(optionButton, {BackgroundColor3 = Color3.fromRGB(51, 51, 51)})
-							Library:tween(optionStroke, {Color = Color3.fromRGB(255, 255, 255)})
-						end
-					end)
+				optionButton.MouseEnter:Connect(function()
+					if optionName ~= Dropdown.Selected then
+						Library:tween(optionButton, {BackgroundColor3 = Color3.fromRGB(51, 51, 51)})
+						Library:tween(optionStroke, {Color = Color3.fromRGB(255, 255, 255)})
+					end
+				end)
 
-					optionButton.MouseLeave:Connect(function()
-						if optionName ~= Dropdown.Selected then
-							Library:tween(optionStroke, {Color = Color3.fromRGB(71, 71, 71)})
-						end
-					end)
+				optionButton.MouseLeave:Connect(function()
+					if optionName ~= Dropdown.Selected then
+						Library:tween(optionStroke, {Color = Color3.fromRGB(71, 71, 71)})
+					end
+				end)
 
-					optionButton.MouseButton1Click:Connect(function()
-						Dropdown:Select(optionName)
-					end)
-				end
+				optionButton.MouseButton1Click:Connect(function()
+					Dropdown:Select(optionName)
+				end)
 			end
 
 			function Dropdown:Select(optionName)
@@ -678,105 +836,95 @@ function Library:new(options)
 				options.callback(optionName)
 			end
 
-			function Dropdown:SetCallback(fn)
-				options.callback = fn
-			end
+			function Dropdown:SetCallback(fn) options.callback = fn end
 
-			do
-				local expandedHeight = collapsedHeight + (#options.options * rowHeight) + 6
-
-				Dropdown["1"].MouseButton1Click:Connect(function()
-					Dropdown.Open = not Dropdown.Open
-					if Dropdown.Open then
-						Library:tween(Dropdown["1"], {Size = UDim2.new(1, 0, 0, expandedHeight)})
-						Library:tween(Dropdown["6"], {Rotation = 180})
-					else
-						Library:tween(Dropdown["1"], {Size = UDim2.new(1, 0, 0, collapsedHeight)})
-						Library:tween(Dropdown["6"], {Rotation = 0})
-					end
-				end)
-			end
+			local expandedHeight = collapsedHeight + (#options.options * rowHeight) + 6
+			Dropdown["1"].MouseButton1Click:Connect(function()
+				Dropdown.Open = not Dropdown.Open
+				if Dropdown.Open then
+					Library:tween(Dropdown["1"], {Size = UDim2.new(1, 0, 0, expandedHeight)})
+					Library:tween(Dropdown["6"], {Rotation = 180})
+				else
+					Library:tween(Dropdown["1"], {Size = UDim2.new(1, 0, 0, collapsedHeight)})
+					Library:tween(Dropdown["6"], {Rotation = 0})
+				end
+			end)
 
 			return Dropdown
 		end
 
-		-- Toggles
 		function Tab:Toggle(options)
 			options = Library:validate({
-				name = "Toggle",
-				default = false,
-				callback = function(value) end
+				name = "Toggle", default = false,
+				callback = function(value) end,
+				notify = nil
 			}, options or {})
 
-			local Toggle = {
-				Value = options.default and true or false
-			}
+			local Toggle = {Value = options.default and true or false}
 
-			do
-				Toggle["1"] = Instance.new("TextButton", Tab["1b"])
-				Toggle["1"].BorderSizePixel = 0
-				Toggle["1"].BackgroundColor3 = Color3.fromRGB(32, 32, 32)
-				Toggle["1"].Size = UDim2.new(1, 0, 0, 32)
-				Toggle["1"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Toggle["1"].Name = "Toggle"
-				Toggle["1"].Text = ""
-				Toggle["1"].AutoButtonColor = false
+			Toggle["1"] = Instance.new("TextButton", Tab["1b"])
+			Toggle["1"].BorderSizePixel = 0
+			Toggle["1"].BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+			Toggle["1"].Size = UDim2.new(1, 0, 0, 32)
+			Toggle["1"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Toggle["1"].Name = "Toggle"
+			Toggle["1"].Text = ""
+			Toggle["1"].AutoButtonColor = false
 
-				Toggle["2"] = Instance.new("UICorner", Toggle["1"])
-				Toggle["2"].CornerRadius = UDim.new(0, 4)
+			Toggle["2"] = Instance.new("UICorner", Toggle["1"])
+			Toggle["2"].CornerRadius = UDim.new(0, 4)
 
-				Toggle["3"] = Instance.new("UIStroke", Toggle["1"])
-				Toggle["3"].Thickness = 0.5
-				Toggle["3"].Color = Color3.fromRGB(71, 71, 71)
-				Toggle["3"].ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+			Toggle["3"] = Instance.new("UIStroke", Toggle["1"])
+			Toggle["3"].Thickness = 0.5
+			Toggle["3"].Color = Color3.fromRGB(71, 71, 71)
+			Toggle["3"].ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-				Toggle["4"] = Instance.new("TextLabel", Toggle["1"])
-				Toggle["4"].BorderSizePixel = 0
-				Toggle["4"].TextSize = 14
-				Toggle["4"].TextXAlignment = Enum.TextXAlignment.Left
-				Toggle["4"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-				Toggle["4"].FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
-				Toggle["4"].TextColor3 = Color3.fromRGB(255, 255, 255)
-				Toggle["4"].BackgroundTransparency = 1
-				Toggle["4"].Size = UDim2.new(1, -26, 1, 0)
-				Toggle["4"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Toggle["4"].Text = options.name
-				Toggle["4"].Name = "Title"
+			Toggle["4"] = Instance.new("TextLabel", Toggle["1"])
+			Toggle["4"].BorderSizePixel = 0
+			Toggle["4"].TextSize = 14
+			Toggle["4"].TextXAlignment = Enum.TextXAlignment.Left
+			Toggle["4"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			Toggle["4"].FontFace = Font.new("rbxasset://fonts/families/Ubuntu.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+			Toggle["4"].TextColor3 = Color3.fromRGB(255, 255, 255)
+			Toggle["4"].BackgroundTransparency = 1
+			Toggle["4"].Size = UDim2.new(1, -26, 1, 0)
+			Toggle["4"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Toggle["4"].Text = options.name
+			Toggle["4"].Name = "Title"
 
-				Toggle["5"] = Instance.new("UIPadding", Toggle["1"])
-				Toggle["5"].PaddingTop = UDim.new(0, 6)
-				Toggle["5"].PaddingRight = UDim.new(0, 6)
-				Toggle["5"].PaddingLeft = UDim.new(0, 6)
-				Toggle["5"].PaddingBottom = UDim.new(0, 6)
+			Toggle["5"] = Instance.new("UIPadding", Toggle["1"])
+			Toggle["5"].PaddingTop = UDim.new(0, 6)
+			Toggle["5"].PaddingRight = UDim.new(0, 6)
+			Toggle["5"].PaddingLeft = UDim.new(0, 6)
+			Toggle["5"].PaddingBottom = UDim.new(0, 6)
 
-				Toggle["6"] = Instance.new("Frame", Toggle["1"])
-				Toggle["6"].BorderSizePixel = 0
-				Toggle["6"].BackgroundColor3 = Color3.fromRGB(57, 57, 57)
-				Toggle["6"].AnchorPoint = Vector2.new(1, 0.5)
-				Toggle["6"].Size = UDim2.new(0, 16, 0, 16)
-				Toggle["6"].Position = UDim2.new(1, 0, 0.5, 0)
-				Toggle["6"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Toggle["6"].Name = "CheckmarkHolder"
+			Toggle["6"] = Instance.new("Frame", Toggle["1"])
+			Toggle["6"].BorderSizePixel = 0
+			Toggle["6"].BackgroundColor3 = Color3.fromRGB(57, 57, 57)
+			Toggle["6"].AnchorPoint = Vector2.new(1, 0.5)
+			Toggle["6"].Size = UDim2.new(0, 16, 0, 16)
+			Toggle["6"].Position = UDim2.new(1, 0, 0.5, 0)
+			Toggle["6"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Toggle["6"].Name = "CheckmarkHolder"
 
-				Toggle["7"] = Instance.new("UICorner", Toggle["6"])
-				Toggle["7"].CornerRadius = UDim.new(0, 2)
+			Toggle["7"] = Instance.new("UICorner", Toggle["6"])
+			Toggle["7"].CornerRadius = UDim.new(0, 2)
 
-				Toggle["8"] = Instance.new("UIStroke", Toggle["6"])
-				Toggle["8"].Thickness = 1.5
-				Toggle["8"].Color = Color3.fromRGB(71, 71, 71)
+			Toggle["8"] = Instance.new("UIStroke", Toggle["6"])
+			Toggle["8"].Thickness = 1.5
+			Toggle["8"].Color = Color3.fromRGB(71, 71, 71)
 
-				Toggle["9"] = Instance.new("ImageLabel", Toggle["6"])
-				Toggle["9"].BorderSizePixel = 0
-				Toggle["9"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-				Toggle["9"].ImageTransparency = 1
-				Toggle["9"].AnchorPoint = Vector2.new(0.5, 0.5)
-				Toggle["9"].Image = "rbxassetid://116790468635619"
-				Toggle["9"].Size = UDim2.new(1, -2, 1, -2)
-				Toggle["9"].BorderColor3 = Color3.fromRGB(0, 0, 0)
-				Toggle["9"].BackgroundTransparency = 1
-				Toggle["9"].Name = "Checkmark"
-				Toggle["9"].Position = UDim2.new(0.5, 0.5, 0.5)
-			end
+			Toggle["9"] = Instance.new("ImageLabel", Toggle["6"])
+			Toggle["9"].BorderSizePixel = 0
+			Toggle["9"].BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			Toggle["9"].ImageTransparency = 1
+			Toggle["9"].AnchorPoint = Vector2.new(0.5, 0.5)
+			Toggle["9"].Image = "rbxassetid://116790468635619"
+			Toggle["9"].Size = UDim2.new(1, -2, 1, -2)
+			Toggle["9"].BorderColor3 = Color3.fromRGB(0, 0, 0)
+			Toggle["9"].BackgroundTransparency = 1
+			Toggle["9"].Name = "Checkmark"
+			Toggle["9"].Position = UDim2.new(0.5, 0.5, 0.5)
 
 			local function refresh()
 				if Toggle.Value then
@@ -794,18 +942,15 @@ function Library:new(options)
 				Toggle.Value = value and true or false
 				refresh()
 				options.callback(Toggle.Value)
+				if options.notify then GUI:Notify(options.notify) end
 			end
-
-			function Toggle:SetCallback(fn)
-				options.callback = fn
-			end
+			function Toggle:SetCallback(fn) options.callback = fn end
 
 			Toggle["1"].MouseButton1Click:Connect(function()
 				Toggle:Set(not Toggle.Value)
 			end)
 
 			refresh()
-
 			return Toggle
 		end
 
@@ -814,5 +959,7 @@ function Library:new(options)
 
 	return GUI
 end
+
+Library.MakeWindow = Library.new
 
 return Library
